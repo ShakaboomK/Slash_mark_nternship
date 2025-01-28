@@ -1,0 +1,11 @@
+spring:
+  application:
+    name: VirtualMedicineHome
+  data:
+    mongodb:
+      uri: mongodb+srv://mrkarthikkalva007:ZTvU4qJbGncnT8JL@cluster0.16frp.mongodb.net/VirtualMedicineHome?retryWrites=true&w=majority&appName=Cluster0
+
+
+
+server:
+  port: 8520
