@@ -25,6 +25,11 @@ class GamePanel extends JPanel implements ActionListener, KeyListener {
     private static final int WIDTH = 24;
     private static final int HEIGHT = 24;
     private static final int TILE_SIZE = 25;
+    private static final int INITIAL_DELAY = 150;
+    private static final int SPEED_INCREASE_INTERVAL = 5;
+    private static final int SPEED_INCREMENT = 10;
+    private static final int MIN_DELAY = 50;
+
     private final Timer timer;
     private int dx = 1, dy = 0;
     private final LinkedList<Point> snake = new LinkedList<>();
@@ -38,7 +43,7 @@ class GamePanel extends JPanel implements ActionListener, KeyListener {
         setFocusable(true);
         addKeyListener(this);
         initGame();
-        timer = new Timer(150, this);
+        timer = new Timer(INITIAL_DELAY, this);
         timer.start();
     }
 
@@ -52,6 +57,10 @@ class GamePanel extends JPanel implements ActionListener, KeyListener {
         dy = 0;
         score = 0;
         gameOver = false;
+        if (timer != null) {
+            timer.setDelay(INITIAL_DELAY);
+            timer.start();
+        }
     }
 
     private void generateFood() {
@@ -80,9 +89,19 @@ class GamePanel extends JPanel implements ActionListener, KeyListener {
 
         if (newHead.equals(food)) {
             score++;
+            increaseDifficulty();
             generateFood();
         } else {
             snake.removeLast();
+        }
+    }
+
+    private void increaseDifficulty() {
+        if (score % SPEED_INCREASE_INTERVAL == 0) {
+            int newDelay = timer.getDelay() - SPEED_INCREMENT;
+            if (newDelay >= MIN_DELAY) {
+                timer.setDelay(newDelay);
+            }
         }
     }
 
@@ -117,10 +136,11 @@ class GamePanel extends JPanel implements ActionListener, KeyListener {
         g.setColor(Color.RED);
         g.fillRect(food.x * TILE_SIZE, food.y * TILE_SIZE, TILE_SIZE - 2, TILE_SIZE - 2);
 
-        // Draw score
+        // Draw score and speed
         g.setColor(Color.WHITE);
         g.setFont(new Font("Arial", Font.BOLD, 20));
         g.drawString("Score: " + score, 10, 20);
+        g.drawString("Speed: " + (INITIAL_DELAY - timer.getDelay()) / SPEED_INCREMENT + "x", 10, 40);
 
         // Game over message
         if (gameOver) {
@@ -129,30 +149,43 @@ class GamePanel extends JPanel implements ActionListener, KeyListener {
             String msg = "Game Over! Score: " + score;
             int msgWidth = g.getFontMetrics().stringWidth(msg);
             g.drawString(msg, (getWidth() - msgWidth) / 2, getHeight() / 2);
+
+            g.setFont(new Font("Arial", Font.BOLD, 20));
+            String restartMsg = "Press SPACE to restart";
+            int restartWidth = g.getFontMetrics().stringWidth(restartMsg);
+            g.drawString(restartMsg, (getWidth() - restartWidth) / 2, getHeight() / 2 + 40);
         }
     }
 
     @Override
     public void keyPressed(KeyEvent e) {
         int key = e.getKeyCode();
-        if (key == KeyEvent.VK_UP && dy != 1) {
-            dx = 0;
-            dy = -1;
-        } else if (key == KeyEvent.VK_DOWN && dy != -1) {
-            dx = 0;
-            dy = 1;
-        } else if (key == KeyEvent.VK_LEFT && dx != 1) {
-            dx = -1;
-            dy = 0;
-        } else if (key == KeyEvent.VK_RIGHT && dx != -1) {
-            dx = 1;
-            dy = 0;
+        if (!gameOver) {
+            if (key == KeyEvent.VK_UP && dy != 1) {
+                dx = 0;
+                dy = -1;
+            } else if (key == KeyEvent.VK_DOWN && dy != -1) {
+                dx = 0;
+                dy = 1;
+            } else if (key == KeyEvent.VK_LEFT && dx != 1) {
+                dx = -1;
+                dy = 0;
+            } else if (key == KeyEvent.VK_RIGHT && dx != -1) {
+                dx = 1;
+                dy = 0;
+            }
+        } else {
+            if (key == KeyEvent.VK_SPACE) {
+                initGame();
+            }
         }
     }
 
     @Override
-    public void keyTyped(KeyEvent e) {}
+    public void keyTyped(KeyEvent e) {
+    }
 
     @Override
-    public void keyReleased(KeyEvent e) {}
+    public void keyReleased(KeyEvent e) {
+    }
 }
