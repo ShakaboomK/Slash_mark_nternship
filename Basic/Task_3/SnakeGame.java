@@ -29,13 +29,18 @@ class GamePanel extends JPanel implements ActionListener, KeyListener {
     private static final int SPEED_INCREASE_INTERVAL = 5;
     private static final int SPEED_INCREMENT = 10;
     private static final int MIN_DELAY = 50;
+    private static final int SPECIAL_FOOD_DURATION = 5000; // 5 seconds
 
     private final Timer timer;
     private int dx = 1, dy = 0;
     private final LinkedList<Point> snake = new LinkedList<>();
     private Point food;
+    private Point specialFood;
+    private boolean hasSpecialFood = false;
+    private long specialFoodExpireTime;
     private boolean gameOver = false;
     private int score = 0;
+    private int regularFoodEaten = 0;
 
     public GamePanel() {
         setPreferredSize(new Dimension(WIDTH * TILE_SIZE, HEIGHT * TILE_SIZE));
@@ -53,14 +58,13 @@ class GamePanel extends JPanel implements ActionListener, KeyListener {
         snake.add(new Point(11, 12));
         snake.add(new Point(10, 12));
         generateFood();
+        hasSpecialFood = false;
+        regularFoodEaten = 0;
         dx = 1;
         dy = 0;
         score = 0;
         gameOver = false;
-        if (timer != null) {
-            timer.setDelay(INITIAL_DELAY);
-            timer.start();
-        }
+        timer.setDelay(INITIAL_DELAY);
     }
 
     private void generateFood() {
@@ -73,13 +77,32 @@ class GamePanel extends JPanel implements ActionListener, KeyListener {
         food = new Point(x, y);
     }
 
+    private void generateSpecialFood() {
+        Random rand = new Random();
+        int x, y;
+        do {
+            x = rand.nextInt(WIDTH);
+            y = rand.nextInt(HEIGHT);
+        } while (snake.contains(new Point(x, y)) || (x == food.x && y == food.y));
+        specialFood = new Point(x, y);
+        hasSpecialFood = true;
+        specialFoodExpireTime = System.currentTimeMillis() + SPECIAL_FOOD_DURATION;
+    }
+
     @Override
     public void actionPerformed(ActionEvent e) {
         if (!gameOver) {
             move();
             checkCollision();
+            checkSpecialFoodExpiry();
         }
         repaint();
+    }
+
+    private void checkSpecialFoodExpiry() {
+        if (hasSpecialFood && System.currentTimeMillis() > specialFoodExpireTime) {
+            hasSpecialFood = false;
+        }
     }
 
     private void move() {
@@ -88,9 +111,16 @@ class GamePanel extends JPanel implements ActionListener, KeyListener {
         snake.addFirst(newHead);
 
         if (newHead.equals(food)) {
+            regularFoodEaten++;
             score++;
             increaseDifficulty();
             generateFood();
+            if (regularFoodEaten % 5 == 0) {
+                generateSpecialFood();
+            }
+        } else if (hasSpecialFood && newHead.equals(specialFood)) {
+            score += 3;
+            hasSpecialFood = false;
         } else {
             snake.removeLast();
         }
@@ -132,9 +162,18 @@ class GamePanel extends JPanel implements ActionListener, KeyListener {
             g.fillRect(p.x * TILE_SIZE, p.y * TILE_SIZE, TILE_SIZE - 2, TILE_SIZE - 2);
         }
 
-        // Draw food
+        // Draw regular food
         g.setColor(Color.RED);
         g.fillRect(food.x * TILE_SIZE, food.y * TILE_SIZE, TILE_SIZE - 2, TILE_SIZE - 2);
+
+        // Draw special food
+        if (hasSpecialFood) {
+            g.setColor(Color.ORANGE);
+            int size = TILE_SIZE * 2 - 2;
+            int offset = (TILE_SIZE - size) / 2;
+            g.fillRect(specialFood.x * TILE_SIZE + offset,
+                    specialFood.y * TILE_SIZE + offset, size, size);
+        }
 
         // Draw score and speed
         g.setColor(Color.WHITE);
@@ -177,6 +216,7 @@ class GamePanel extends JPanel implements ActionListener, KeyListener {
         } else {
             if (key == KeyEvent.VK_SPACE) {
                 initGame();
+                timer.start();
             }
         }
     }
