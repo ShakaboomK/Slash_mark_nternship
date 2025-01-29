@@ -47,8 +47,8 @@ class GamePanel extends JPanel implements ActionListener, KeyListener {
         setBackground(Color.BLACK);
         setFocusable(true);
         addKeyListener(this);
-        initGame();
         timer = new Timer(INITIAL_DELAY, this);
+        initGame();
         timer.start();
     }
 
